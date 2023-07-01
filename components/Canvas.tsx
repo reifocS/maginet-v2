@@ -152,6 +152,7 @@ export default function Canvas() {
     e.currentTarget.releasePointerCapture(e.pointerId);
     rDragging.current = null;
   };
+  
   const [camera, setCamera] = React.useState({
     x: 0,
     y: 0,
