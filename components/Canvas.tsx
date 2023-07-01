@@ -12,6 +12,15 @@ interface Camera {
   z: number;
 }
 
+interface Shape {
+  id: string;
+  point: number[];
+  size: number[];
+}
+
+const add = (a: number[], b: number[]) => [a[0] + b[0], a[1] + b[1]];
+const sub = (a: number[], b: number[]) => [a[0] - b[0], a[1] - b[1]];
+
 function screenToCanvas(point: Point, camera: Camera): Point {
   return {
     x: point.x / camera.z - camera.x,
@@ -86,7 +95,63 @@ function zoomOut(camera: Camera): Camera {
 
 export default function Canvas() {
   const ref = React.useRef<SVGSVGElement>(null);
+  const rDragging = React.useRef<{
+    shape: Shape;
+    origin: number[];
+  } | null>(null);
+  const [shapes, setShapes] = React.useState<Record<string, Shape>>({
+    a: {
+      id: "a",
+      point: [200, 200],
+      size: [100, 100],
+    },
+    b: {
+      id: "b",
+      point: [320, 200],
+      size: [100, 100],
+    },
+    c: {
+      id: "c",
+      point: [50, 70],
+      size: [100, 100],
+    },
+  });
+  function onPointerDown(e: React.PointerEvent<SVGElement>) {
+    e.currentTarget.setPointerCapture(e.pointerId);
 
+    const id = e.currentTarget.id;
+    const { x, y } = screenToCanvas({ x: e.clientX, y: e.clientY }, camera);
+    const point = [x, y];
+
+    rDragging.current = {
+      shape: { ...shapes[id] },
+      origin: point,
+    };
+  }
+
+  function onPointerMove(e: React.PointerEvent<SVGElement>) {
+    const dragging = rDragging.current;
+
+    if (!dragging) return;
+
+    const shape = shapes[dragging.shape.id];
+    const { x, y } = screenToCanvas({ x: e.clientX, y: e.clientY }, camera);
+    const point = [x, y];
+    const delta = sub(point, dragging.origin);
+
+    setShapes({
+      ...shapes,
+      [shape.id]: {
+        ...shape,
+        point: add(dragging.shape.point, delta),
+      },
+    });
+  }
+
+  const onPointerUp = (e: React.PointerEvent<SVGElement>) => {
+    e.currentTarget.releasePointerCapture(e.pointerId);
+    rDragging.current = null;
+  };
   const [camera, setCamera] = React.useState({
     x: 0,
     y: 0,
@@ -133,15 +198,18 @@ export default function Canvas() {
     <div>
       <svg ref={ref}>
         <g style={{ transform }}>
-          {Array.from(Array(100)).map((_, i) => (
+          {Object.values(shapes).map((shape) => (
             <image
-              key={i}
-              x={(i % 10) * 200}
-              y={Math.floor(i / 10) * 200}
-              id="box"
-              height="100"
-              width="100"
+              key={shape.id}
+              id={shape.id}
+              x={shape.point[0]}
+              y={shape.point[1]}
+              width={shape.size[0]}
+              height={shape.size[1]}
               href="https://cards.scryfall.io/normal/front/f/a/fab2d8a9-ab4c-4225-a570-22636293c17d.jpg?1654566563"
+              onPointerDown={onPointerDown}
+              onPointerMove={onPointerMove}
+              onPointerUp={onPointerUp}
             />
           ))}
         </g>
