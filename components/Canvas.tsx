@@ -1,4 +1,4 @@
-"use client";
+"use client only";
 import * as React from "react";
 
 interface Point {
