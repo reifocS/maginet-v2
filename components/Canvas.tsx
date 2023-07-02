@@ -126,7 +126,7 @@ export default function Canvas() {
     z: 1,
   });
 
-  usePreventNavigation(ref);
+  // usePreventNavigation(ref);
   function onPointerDown(e: React.PointerEvent<SVGElement>) {
     e.currentTarget.setPointerCapture(e.pointerId);
 
