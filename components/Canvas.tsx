@@ -1,6 +1,7 @@
 "use client";
 import * as React from "react";
 import Card from "./Card";
+import { usePreventNavigation } from "@/hooks/usePreventNavigation";
 
 interface Point {
   x: number;
@@ -96,6 +97,7 @@ function zoomOut(camera: Camera): Camera {
 
 export default function Canvas() {
   const ref = React.useRef<SVGSVGElement>(null);
+  const containerRef = React.useRef<HTMLDivElement>(null);
   const rDragging = React.useRef<{
     shape: Shape;
     origin: number[];
@@ -122,6 +124,8 @@ export default function Canvas() {
     y: 0,
     z: 1,
   });
+
+  usePreventNavigation(containerRef);
   function onPointerDown(e: React.PointerEvent<SVGElement>) {
     e.currentTarget.setPointerCapture(e.pointerId);
 
@@ -187,8 +191,8 @@ export default function Canvas() {
   const transform = `scale(${camera.z}) translate(${camera.x}px, ${camera.y}px)`;
 
   return (
-    <div>
-      <svg ref={ref}>
+    <div ref={containerRef}>
+      <svg ref={ref} className="canvas">
         <g style={{ transform }}>
           {Object.values(shapes).map((shape) => (
             <Card

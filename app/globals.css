@@ -2,7 +2,7 @@
 @tailwind components;
 @tailwind utilities;
 
-svg {
+.canvas {
   position: fixed;
   background-color: #35654d;
   top: 0;
