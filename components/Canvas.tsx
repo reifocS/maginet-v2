@@ -2,6 +2,7 @@
 import * as React from "react";
 import Card from "./Card";
 import { usePreventNavigation } from "@/hooks/usePreventNavigation";
+import useZoomEvents from "@/hooks/useZoomEvents";
 
 interface Point {
   x: number;
@@ -60,7 +61,7 @@ function getViewport(camera: Camera, box: Box): Box {
   };
 }
 
-function panCamera(camera: Camera, dx: number, dy: number): Camera {
+export function panCamera(camera: Camera, dx: number, dy: number): Camera {
   return {
     x: camera.x - dx / camera.z,
     y: camera.y - dy / camera.z,
@@ -68,7 +69,7 @@ function panCamera(camera: Camera, dx: number, dy: number): Camera {
   };
 }
 
-function zoomCamera(camera: Camera, point: Point, dz: number): Camera {
+export function zoomCamera(camera: Camera, point: Point, dz: number): Camera {
   const zoom = camera.z - dz * camera.z;
 
   const p1 = screenToCanvas(point, camera);
@@ -163,30 +164,7 @@ export default function Canvas() {
     rDragging.current = null;
   };
 
-  React.useEffect(() => {
-    function handleWheel(event: WheelEvent) {
-      event.preventDefault();
-
-      const { clientX, clientY, deltaX, deltaY, ctrlKey } = event;
-
-      if (ctrlKey) {
-        setCamera((camera) =>
-          zoomCamera(camera, { x: clientX, y: clientY }, deltaY / 100)
-        );
-      } else {
-        setCamera((camera) => panCamera(camera, deltaX, deltaY));
-      }
-    }
-
-    const elm = ref.current;
-    if (!elm) return;
-
-    elm.addEventListener("wheel", handleWheel, { passive: false });
-
-    return () => {
-      elm.removeEventListener("wheel", handleWheel);
-    };
-  }, [ref]);
+  useZoomEvents(setCamera, ref);
 
   const transform = `scale(${camera.z}) translate(${camera.x}px, ${camera.y}px)`;
 
