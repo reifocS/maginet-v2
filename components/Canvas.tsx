@@ -126,7 +126,7 @@ export default function Canvas() {
     z: 1,
   });
 
-  usePreventNavigation(containerRef);
+  usePreventNavigation(ref);
   function onPointerDown(e: React.PointerEvent<SVGElement>) {
     e.currentTarget.setPointerCapture(e.pointerId);
 
@@ -169,7 +169,7 @@ export default function Canvas() {
   const transform = `scale(${camera.z}) translate(${camera.x}px, ${camera.y}px)`;
 
   return (
-    <div ref={containerRef}>
+    <div>
       <svg ref={ref} className="canvas">
         <g style={{ transform }}>
           {Object.values(shapes).map((shape) => (

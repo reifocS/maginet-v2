@@ -1,6 +1,6 @@
 import * as React from "react";
 
-export function usePreventNavigation(rCanvas: React.RefObject<HTMLDivElement>) {
+export function usePreventNavigation(rCanvas: React.RefObject<SVGElement>) {
   React.useEffect(() => {
     const preventGestureNavigation = (event: TouchEvent) => {
       event.preventDefault();
