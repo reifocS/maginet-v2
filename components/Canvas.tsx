@@ -1,5 +1,6 @@
 "use client";
 import * as React from "react";
+import Card from "./Card";
 
 interface Point {
   x: number;
@@ -12,7 +13,7 @@ interface Camera {
   z: number;
 }
 
-interface Shape {
+export interface Shape {
   id: string;
   point: number[];
   size: number[];
@@ -116,6 +117,11 @@ export default function Canvas() {
       size: [100, 100],
     },
   });
+  const [camera, setCamera] = React.useState({
+    x: 0,
+    y: 0,
+    z: 1,
+  });
   function onPointerDown(e: React.PointerEvent<SVGElement>) {
     e.currentTarget.setPointerCapture(e.pointerId);
 
@@ -152,12 +158,6 @@ export default function Canvas() {
     e.currentTarget.releasePointerCapture(e.pointerId);
     rDragging.current = null;
   };
-  
-  const [camera, setCamera] = React.useState({
-    x: 0,
-    y: 0,
-    z: 1,
-  });
 
   React.useEffect(() => {
     function handleWheel(event: WheelEvent) {
@@ -186,28 +186,14 @@ export default function Canvas() {
 
   const transform = `scale(${camera.z}) translate(${camera.x}px, ${camera.y}px)`;
 
-  const viewport = getViewport(camera, {
-    minX: 0,
-    minY: 0,
-    maxX: window.innerWidth,
-    maxY: window.innerHeight,
-    width: window.innerWidth,
-    height: window.innerHeight,
-  });
-
   return (
     <div>
       <svg ref={ref}>
         <g style={{ transform }}>
           {Object.values(shapes).map((shape) => (
-            <image
+            <Card
               key={shape.id}
-              id={shape.id}
-              x={shape.point[0]}
-              y={shape.point[1]}
-              width={shape.size[0]}
-              height={shape.size[1]}
-              href="https://cards.scryfall.io/normal/front/f/a/fab2d8a9-ab4c-4225-a570-22636293c17d.jpg?1654566563"
+              shape={shape}
               onPointerDown={onPointerDown}
               onPointerMove={onPointerMove}
               onPointerUp={onPointerUp}
@@ -228,11 +214,11 @@ export default function Canvas() {
         >
           Zoom Out
         </button>
-        <div>{Math.floor(camera.z * 100)}%</div>
+        {/* <div>{Math.floor(camera.z * 100)}%</div>
         <div>x: {Math.floor(viewport.minX)}</div>
         <div>y: {Math.floor(viewport.minY)}</div>
         <div>width: {Math.floor(viewport.width)}</div>
-        <div>height: {Math.floor(viewport.height)}</div>
+        <div>height: {Math.floor(viewport.height)}</div> */}
       </div>
     </div>
   );
