@@ -3,7 +3,7 @@ import * as React from "react";
 import Card from "./Card";
 import { usePreventNavigation } from "@/hooks/usePreventNavigation";
 import useZoomEvents from "@/hooks/useZoomEvents";
-
+import { useDrag } from "@use-gesture/react";
 interface Point {
   x: number;
   y: number;
@@ -126,7 +126,6 @@ export default function Canvas() {
     z: 1,
   });
 
-  // usePreventNavigation(ref);
   function onPointerDown(e: React.PointerEvent<SVGElement>) {
     e.currentTarget.setPointerCapture(e.pointerId);
 
@@ -141,6 +140,7 @@ export default function Canvas() {
   }
 
   function onPointerMove(e: React.PointerEvent<SVGElement>) {
+    e.stopPropagation();
     const dragging = rDragging.current;
 
     if (!dragging) return;
@@ -164,13 +164,17 @@ export default function Canvas() {
     rDragging.current = null;
   };
 
+  const bind = useDrag(({ delta: [deltaX, deltaY] }) => {
+    setCamera((camera) => panCamera(camera, -deltaX, -deltaY));
+  });
+
   useZoomEvents(setCamera, ref);
 
   const transform = `scale(${camera.z}) translate(${camera.x}px, ${camera.y}px)`;
 
   return (
     <div>
-      <svg ref={ref} className="canvas">
+      <svg ref={ref} className="canvas" {...bind()}>
         <g style={{ transform }}>
           {Object.values(shapes).map((shape) => (
             <Card
