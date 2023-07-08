@@ -1,17 +1,16 @@
 "use client";
 import * as React from "react";
 import Card from "./Card";
-import { usePreventNavigation } from "@/hooks/usePreventNavigation";
 import useZoomEvents from "@/hooks/useZoomEvents";
 import { useDrag } from "@use-gesture/react";
+import vec from "@/utils/vec";
 interface Point {
   x: number;
   y: number;
 }
 
-interface Camera {
-  x: number;
-  y: number;
+export interface Camera {
+  point: number[];
   z: number;
 }
 
@@ -24,81 +23,88 @@ export interface Shape {
 const add = (a: number[], b: number[]) => [a[0] + b[0], a[1] + b[1]];
 const sub = (a: number[], b: number[]) => [a[0] - b[0], a[1] - b[1]];
 
-function screenToCanvas(point: Point, camera: Camera): Point {
-  return {
-    x: point.x / camera.z - camera.x,
-    y: point.y / camera.z - camera.y,
-  };
+export function screenToWorld(point: number[], camera: Camera): number[] {
+  return vec.sub(vec.div(point, camera.z), camera.point);
 }
-
-function canvasToScreen(point: Point, camera: Camera): Point {
-  return {
-    x: (point.x - camera.x) * camera.z,
-    y: (point.y - camera.y) * camera.z,
-  };
+export function getCameraZoom(zoom: number): number {
+  return vec.clamp(zoom, 1, 5);
 }
+// interface Box {
+//   minX: number;
+//   minY: number;
+//   maxX: number;
+//   maxY: number;
+//   width: number;
+//   height: number;
+// }
+// function screenToCanvas(point: Point, camera: Camera): Point {
+//   return {
+//     x: point.x / camera.z - camera.x,
+//     y: point.y / camera.z - camera.y,
+//   }
+// }
 
-interface Box {
-  minX: number;
-  minY: number;
-  maxX: number;
-  maxY: number;
-  width: number;
-  height: number;
-}
-
-function getViewport(camera: Camera, box: Box): Box {
-  const topLeft = screenToCanvas({ x: box.minX, y: box.minY }, camera);
-  const bottomRight = screenToCanvas({ x: box.maxX, y: box.maxY }, camera);
-
-  return {
-    minX: topLeft.x,
-    minY: topLeft.y,
-    maxX: bottomRight.x,
-    maxY: bottomRight.y,
-    height: bottomRight.x - topLeft.x,
-    width: bottomRight.y - topLeft.y,
-  };
-}
+// function panCamera(camera: Camera, dx: number, dy: number): Camera {
+//   return {
+//     x: camera.x - dx / camera.z,
+//     y: camera.y - dy / camera.z,
+//     z: camera.z,
+//   }
+// }
 
 export function panCamera(camera: Camera, dx: number, dy: number): Camera {
   return {
-    x: camera.x - dx / camera.z,
-    y: camera.y - dy / camera.z,
+    point: vec.sub(camera.point, vec.div([dx, dy], camera.z)),
     z: camera.z,
   };
 }
 
-export function zoomCamera(camera: Camera, point: Point, dz: number): Camera {
-  const zoom = camera.z - dz * camera.z;
+// export function zoomCamera(camera: Camera, point: Point, dz: number): Camera {
+//   const zoom = camera.z - dz * camera.z;
 
-  const p1 = screenToCanvas(point, camera);
-  const p2 = screenToCanvas(point, { ...camera, z: zoom });
+//   const p1 = screenToCanvas(point, camera);
+//   const p2 = screenToCanvas(point, { ...camera, z: zoom });
 
-  return {
-    x: camera.x + (p2.x - p1.x),
-    y: camera.y + (p2.y - p1.y),
-    z: zoom,
-  };
+//   return {
+//     x: camera.x + (p2.x - p1.x),
+//     y: camera.y + (p2.y - p1.y),
+//     z: zoom,
+//   };
+// }
+
+export function zoomCamera(
+  camera: Camera,
+  point: number[],
+  dz: number
+): Camera {
+  const next = camera.z - (dz / 50) * camera.z;
+  console.log(next);
+  const p0 = screenToWorld(point, camera);
+  camera.z = getCameraZoom(next);
+  const p1 = screenToWorld(point, camera);
+  camera.point = vec.add(camera.point, vec.sub(p1, p0));
+
+  return { ...camera };
 }
+// function zoomIn(camera: Camera): Camera {
+//   const i = Math.round(camera.z * 100) / 25;
+//   const nextZoom = (i + 1) * 0.25;
+//   const center = [window.innerWidth / 2, window.innerHeight];
+//   return zoomCamera(camera, center, camera.z - nextZoom);
+// }
 
-function zoomIn(camera: Camera): Camera {
-  const i = Math.round(camera.z * 100) / 25;
-  const nextZoom = (i + 1) * 0.25;
-  const center = { x: window.innerWidth / 2, y: window.innerHeight / 2 };
-  return zoomCamera(camera, center, camera.z - nextZoom);
-}
+// function zoomOut(camera: Camera): Camera {
+//   const i = Math.round(camera.z * 100) / 25;
+//   const nextZoom = (i - 1) * 0.25;
+//   const center = [window.innerWidth / 2, window.innerHeight];
+//   return zoomCamera(camera, center, camera.z - nextZoom);
+// }
 
-function zoomOut(camera: Camera): Camera {
-  const i = Math.round(camera.z * 100) / 25;
-  const nextZoom = (i - 1) * 0.25;
-  const center = { x: window.innerWidth / 2, y: window.innerHeight / 2 };
-  return zoomCamera(camera, center, camera.z - nextZoom);
-}
+const CARD_HEIGHT = 200;
+const CARD_WIDTH = 200;
 
 export default function Canvas() {
   const ref = React.useRef<SVGSVGElement>(null);
-  const containerRef = React.useRef<HTMLDivElement>(null);
   const rDragging = React.useRef<{
     shape: Shape;
     origin: number[];
@@ -107,31 +113,29 @@ export default function Canvas() {
     a: {
       id: "a",
       point: [200, 200],
-      size: [100, 100],
+      size: [CARD_HEIGHT, CARD_WIDTH],
     },
     b: {
       id: "b",
       point: [320, 200],
-      size: [100, 100],
+      size: [CARD_HEIGHT, CARD_WIDTH],
     },
     c: {
       id: "c",
       point: [50, 70],
-      size: [100, 100],
+      size: [CARD_HEIGHT, CARD_WIDTH],
     },
   });
   const [camera, setCamera] = React.useState({
-    x: 0,
-    y: 0,
-    z: 1,
+    point: [0, 0],
+    z: 5,
   });
 
   function onPointerDown(e: React.PointerEvent<SVGElement>) {
     e.currentTarget.setPointerCapture(e.pointerId);
 
     const id = e.currentTarget.id;
-    const { x, y } = screenToCanvas({ x: e.clientX, y: e.clientY }, camera);
-    const point = [x, y];
+    const point = screenToWorld([e.clientX, e.clientY], camera);
 
     rDragging.current = {
       shape: { ...shapes[id] },
@@ -146,8 +150,7 @@ export default function Canvas() {
     if (!dragging) return;
 
     const shape = shapes[dragging.shape.id];
-    const { x, y } = screenToCanvas({ x: e.clientX, y: e.clientY }, camera);
-    const point = [x, y];
+    const point = screenToWorld([e.clientX, e.clientY], camera);
     const delta = sub(point, dragging.origin);
 
     setShapes({
@@ -168,9 +171,11 @@ export default function Canvas() {
     setCamera((camera) => panCamera(camera, -deltaX, -deltaY));
   });
 
-  useZoomEvents(setCamera, ref);
+  useZoomEvents(setCamera);
 
-  const transform = `scale(${camera.z}) translate(${camera.x}px, ${camera.y}px)`;
+  // useZoom(camera, setCamera);
+
+  const transform = `scale(${camera.z}) translate(${camera.point[0]}px, ${camera.point[1]}px)`;
 
   return (
     <div>
@@ -187,7 +192,7 @@ export default function Canvas() {
           ))}
         </g>
       </svg>
-      <div>
+      {/* <div>
         <button
           style={{ position: "relative", zIndex: 9999 }}
           onClick={() => setCamera(zoomIn)}
@@ -199,13 +204,13 @@ export default function Canvas() {
           onClick={() => setCamera(zoomOut)}
         >
           Zoom Out
-        </button>
-        {/* <div>{Math.floor(camera.z * 100)}%</div>
+        </button> */}
+      {/* <div>{Math.floor(camera.z * 100)}%</div>
         <div>x: {Math.floor(viewport.minX)}</div>
         <div>y: {Math.floor(viewport.minY)}</div>
         <div>width: {Math.floor(viewport.width)}</div>
         <div>height: {Math.floor(viewport.height)}</div> */}
-      </div>
+      {/* </div> */}
     </div>
   );
 }
