@@ -63,7 +63,7 @@ export default function useZoomEvents(
         }
         if (!rPinchDa.current) return;
         if (!rPinchPoint.current) return;
-        console.log({rPinchDa, rPinchPoint, da})
+        console.log(rPinchDa.current, rPinchPoint.current)
         const [distanceDelta] = vec.sub(rPinchDa.current, da);
         setCamera((prev) =>
           pinchCamera(
