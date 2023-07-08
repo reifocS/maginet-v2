@@ -179,7 +179,7 @@ export default function Canvas() {
 
   return (
     <div>
-      <svg ref={ref} className="canvas">
+      <svg ref={ref} className="canvas" {...bind()}>
         <g style={{ transform }}>
           {Object.values(shapes).map((shape) => (
             <Card
